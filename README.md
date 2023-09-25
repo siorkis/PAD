@@ -48,7 +48,106 @@ Microservices make it easier to integrate with third-party services and APIs, su
 - Microservices & DB: - Python, Flask, PostgreSQL, Non-relational DB
 - Communication: RESTful APIs
 
+
 ## Design Data Management
 
+### Ordering Service
 
+**/create_order GET**
+> JSON 
+```
+request: { 
+           "item" : "apple",
+           "quantity" : 5,
+           "user_id" : 123,
+           "address" : "Florida, Ancr Str, bd 14",
+           "card_number" : 1234123412341234
+          }
+```
+> Response
+> JSON
+
+```
+payload: { 
+           "bill_id" : 1,
+           "item" : "apple",
+           "quantity" : 5,
+           "user_id" : 123,
+           "address" : "Florida, Ancr Str, bd 14",
+           "card_number" : 1234123412341234,
+           "status" : "sent"
+          }
+```
+If the user is unauthorized:
+> Response
+> JSON
+```
+payload: { 
+           "msg" : "Only authorized users can place orders",
+           "status" : "denied"
+          }
+```
+
+### Stock Service
+
+**/show_stock GET**
+> JSON 
+```
+request: {"show_stock" : True}
+```
+> Response
+> JSON
+
+```
+payload: { 
+           "apple": {
+           "quantity" : 1000,
+           "price" : 2
+          },
+          "banana": {
+           "quantity" : 1000,
+           "price" : 4
+          },
+          "potato": {
+           "quantity" : 1000,
+           "price" : 3.5
+          },
+          "tomato": {
+           "quantity" : 1000,
+           "price" : 2.8
+          }
+```
+
+
+### Authentication Service
+
+**/login GET**
+> JSON 
+```
+request: {
+          "name" : "Alex",
+          "password" : "hello"
+         }
+```
+> Response
+> JSON
+```
+payload: { "msg" : "Welcome"}
+payload: { "msg" : "Wrong login or password"}
+```
+
+**/register GET**
+> JSON 
+```
+request: {
+          "name" : "Alex",
+          "password" : "hello",
+          "mail" : "ex@gmail.com"
+         }
+```
+> Response
+> JSON
+```
+payload: { "msg" : "Registration complete"}
+```
 ## Set Up Deployment and Scaling
