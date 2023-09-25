@@ -40,6 +40,7 @@ Microservices make it easier to integrate with third-party services and APIs, su
 #### Authentication Service
 - User authentication
 - Creating/Deleting user's credentials (ex: shipment address, card number)
+- Credential encryption
 - Sending data to the Ordering service
 - Saving/getting data from Authentication DB
 
