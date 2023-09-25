@@ -1,3 +1,7 @@
+# Laboratory work Nr.1
+
+**Online grocery platform (ex: Amazon)**
+
 ## Assess Application Suitability
 
 #### Scalability
@@ -22,14 +26,16 @@ Online grocery stores often face changing customer preferences and market trends
 Microservices make it easier to integrate with third-party services and APIs, such as payment gateways or mapping services, which is crucial for a seamless user experience.
 
 ## Define Service Boundaries
-![pad_diagram](https://github.com/siorkis/PAD/assets/10360165/d521aabd-3479-4713-ae22-da5cbb4d2751)
+![image](https://github.com/siorkis/PAD/assets/10360165/88135c1f-c8b2-4ceb-a924-1d33d0a58f64)
 
 #### Ordering Service
 - Calculating the shipping price
 - Building the bill 
 - Sending a bill to the user
 - Sending data to the Stock service
+- Sending data to the Authentication service
 - Saving/getting data from Ordering DB
+- Getting data from Authentication DB
 
 #### Stock Service
 - Showing grocery catalog
@@ -54,7 +60,7 @@ Microservices make it easier to integrate with third-party services and APIs, su
 
 ### Ordering Service
 
-**/create_order GET**
+**/create_order**
 > JSON 
 ```
 request: { 
@@ -117,6 +123,7 @@ payload: {
            "quantity" : 1000,
            "price" : 2.8
           }
+         }
 ```
 
 
@@ -151,4 +158,44 @@ request: {
 ```
 payload: { "msg" : "Registration complete"}
 ```
+
+**/is_regitred**
+> JSON 
+```
+request: {
+          "name" : "Alex",
+          "password" : "hello",
+          "user_id" : 123
+         }
+```
+> Response
+> JSON
+```
+payload: { "status" : True}
+payload: { "status" : False}
+```
+
 ## Set Up Deployment and Scaling
+
+**Containerization with Docker:**
+
+- Containerization of Microservices: Each microservice will have its Docker container. 
+- Dockerfile: Dockerfiles for each microservice. This file contains instructions to build a Docker image, including the base image, dependencies installation, and application setup.
+- Building Docker Images: Using the Dockerfile to build Docker images for each microservice. 
+
+**Container Orchestration:**
+- Kubernetes is a good choice for container orchestration. Kubernetes is a powerful tool for managing Docker containers in a production environment. It provides features like automated scaling, load balancing, and rolling updates.
+
+OR
+
+- Docker Compose (for Development): While Kubernetes is excellent for production, Docker Compose is useful for local development and testing. It allows you to define and run multi-container applications using a single YAML file.
+
+**Deployment:**
+
+Continuous Integration/Continuous Deployment (CI/CD): Implementation of a CI/CD pipeline to automate the deployment process. (Tools like Jenkins, GitLab CI/CD, or Travis CI)
+
+**Scaling:**
+
+- Horizontal Scaling: Microservices can be independently scaled horizontally to handle increased load. Kubernetes, for example, provides auto-scaling capabilities based on metrics like CPU utilization and incoming traffic.
+- Load Balancing: Using load balancers to distribute traffic evenly among multiple instances of the same microservice. Kubernetes has built-in load-balancing features and also can be used with external load balancers like AWS Elastic Load Balancing or Nginx.
+
