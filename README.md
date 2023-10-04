@@ -32,23 +32,18 @@ Microservices make it easier to integrate with third-party services and APIs, su
 - Calculating the shipping price
 - Building the bill 
 - Sending a bill to the user
+- Make default order
+- Make an order from the specified seller
 - Sending data to the Stock service
-- Sending data to the Authentication service
 - Saving/getting data from Ordering DB
-- Getting data from Authentication DB
 
 #### Stock Service
 - Showing grocery catalog
 - Updating stock
+- Searching through a catalog
+- Adding grocery to the catalog
 - Sending data to the Ordering service 
 - Saving/getting data from Stock DB
-
-#### Authentication Service
-- User authentication
-- Creating/Deleting user's credentials (ex: shipment address, card number)
-- Credential encryption
-- Sending data to the Ordering service
-- Saving/getting data from Authentication DB
 
 ## Choose Technology Stack and Communication Patterns
 - Gateway: JS
@@ -60,15 +55,14 @@ Microservices make it easier to integrate with third-party services and APIs, su
 
 ### Ordering Service
 
-**/create_order**
+**/create_fast_order**
 > JSON 
 ```
 request: { 
-           "item" : "apple",
-           "quantity" : 5,
-           "user_id" : 123,
-           "address" : "Florida, Ancr Str, bd 14",
-           "card_number" : 1234123412341234
+           "item": "apple",
+           "quantity": 5,
+           "address": "Florida, Ancr Str, bd 14",
+           "card_number": 1234123412341234
           }
 ```
 > Response
@@ -76,24 +70,44 @@ request: {
 
 ```
 payload: { 
-           "bill_id" : 1,
-           "item" : "apple",
-           "quantity" : 5,
-           "user_id" : 123,
-           "address" : "Florida, Ancr Str, bd 14",
-           "card_number" : 1234123412341234,
-           "status" : "sent"
+           "bill_id": 1,
+           "item": "apple",
+           "seller": Stock
+           "quantity": 5,
+           "user_id": 123,
+           "address": "Florida, Ancr Str, bd 14",
+           "card_number": 1234123412341234,
+           "status": "sent"
           }
 ```
-If the user is unauthorized:
+
+**/create_custom_order**
+> JSON 
+```
+request: { 
+           "item": "apple",
+           "quantity": 2,
+           "address": "Florida, Ancr Str, bd 14",
+           "seller": Alex
+           "card_number": 1234123412341234
+          }
+```
 > Response
 > JSON
+
 ```
 payload: { 
-           "msg" : "Only authorized users can place orders",
-           "status" : "denied"
+           "bill_id": 1,
+           "item": "apple",
+           "seller": Alex
+           "quantity": 5,
+           "user_id": 123,
+           "address": "Florida, Ancr Str, bd 14",
+           "card_number": 1234123412341234,
+           "status": "sent"
           }
 ```
+
 
 ### Stock Service
 
@@ -108,72 +122,70 @@ request: {"show_stock" : True}
 ```
 payload: { 
            "apple": {
-           "quantity" : 1000,
-           "price" : 2
+           "seller-Stock": {
+           "quantity": 1000,
+           "price": 2,
+           "seller": Stock
+           }
           },
           "banana": {
-           "quantity" : 1000,
-           "price" : 4
+           "seller-Stock": {
+           "quantity": 1000,
+           "price": 4,
+           "seller": Stock
+           }
           },
           "potato": {
-           "quantity" : 1000,
-           "price" : 3.5
+           "seller-Stock": {
+           "quantity": 1000,
+           "price": 3.5,
+           "seller": Stock
+           }
           },
           "tomato": {
-           "quantity" : 1000,
-           "price" : 2.8
+           "seller-Stock": {
+           "quantity": 1000,
+           "price": 2.8,
+           "seller": Stock
+           }
           }
          }
 ```
 
 
-### Authentication Service
-
-**/login GET**
+**/search GET**
 > JSON 
 ```
-request: {
-          "name" : "Alex",
-          "password" : "hello"
-         }
+request: {"find_all" : "apple"}
 ```
 > Response
 > JSON
+
 ```
-payload: { "msg" : "Welcome"}
-payload: { "msg" : "Wrong login or password"}
+payload: { 
+           "quantity": 1000,
+           "price": 2,
+         }
 ```
 
-**/register GET**
+**/add_item GET**
 > JSON 
 ```
-request: {
-          "name" : "Alex",
-          "password" : "hello",
-          "mail" : "ex@gmail.com"
-         }
+request: {"pineapple": {
+           "seller-Alex": {
+           "quantity": 5,
+           "price": 4.50,
+            }
+           }
+          }
 ```
 > Response
 > JSON
+
 ```
-payload: { "msg" : "Registration complete"}
+payload: { "success": True}
 ```
 
-**/is_regitred**
-> JSON 
-```
-request: {
-          "name" : "Alex",
-          "password" : "hello",
-          "user_id" : 123
-         }
-```
-> Response
-> JSON
-```
-payload: { "status" : True}
-payload: { "status" : False}
-```
 
 ## Set Up Deployment and Scaling
 
