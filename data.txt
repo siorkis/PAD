@@ -1,0 +1,51 @@
+/create_order
+
+JSON
+
+request: { 
+           "item": "apple",                           - input
+           "quantity": 5,                             - input 
+           "address": "Florida, Ancr Str, bd 14",     - input
+           "card_number": 1234123412341234            - input
+          }
+
+Response JSON
+
+payload: {                                            - ALL UPD DB
+           "bill_id": 1,                              - 
+           "item": "apple",                           - 
+           "seller": Stock                            - (default value)
+           "quantity": 5,                             - 
+           "usd" : 10
+           "address": "Florida, Ancr Str, bd 14",     - 
+           "card_number": 1234123412341234,           - 
+           "status": "sent"                           
+          }
+
+
+/get_bill
+
+
+/show_stock GET
+
+JSON
+
+request: {"show_stock" : True}
+Response JSON
+
+payload: stock.json
+
+
+/search GET
+
+JSON
+
+request: {"find_all" : "apple"}
+Response JSON
+
+payload: { 
+           "quantity": 1000, b
+           "price": 2,       
+         }
+
+stock db 
