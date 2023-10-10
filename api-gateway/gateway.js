@@ -1,6 +1,3 @@
-const Consul = require('consul');
-const consul = new Consul();
-
 const express = require('express');
 const axios = require('axios');
 const NodeCache = require('node-cache');
@@ -50,7 +47,6 @@ app.use(express.json());  // for parsing application/json
 // Routes for stock_service
 app.use('/stock', acceptOnlyJSON, cacheMiddleware, (req, res) => {
     console.log("Entered /stock route");
-    console.log("Received request for /stock")
     discoverService('stock_service', async (err, service) => {
         if (err) {
             console.error(`Failed to discover stock_service: ${err.message}`);
@@ -110,3 +106,11 @@ app.listen(PORT, () => {
 app.get('/status', (req, res) => {
     res.json({ status: 'Gateway is Healthy' });
 });
+
+// on Windows:
+// first run zkServer.sh start from cmd ../zookeeper/bin/
+// netstat -an | grep 2181 - run from bash ../zookeeper/bin/
+// expected output (zk started):
+// TCP    0.0.0.0:2181           0.0.0.0:0              LISTENING
+// TCP    [::]:2181              [::]:0                 LISTENING
+// in order to terminate zk - zkServer.sh stop from cmd ../zookeeper/bin/
