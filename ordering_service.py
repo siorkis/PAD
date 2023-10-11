@@ -4,9 +4,14 @@ from flask import Flask, jsonify, request
 from timeout_helper import async_timeout, AsyncTimeoutException
 import json
 from flask_sqlalchemy import SQLAlchemy
+import asyncio
 
 app = Flask(__name__)
 url = 'http://localhost:5000'
+
+concurrent_task_limit = 5
+semaphore = asyncio.Semaphore(concurrent_task_limit)
+
 
 with open('db_config.json', 'r') as file:
     db_conf = json.load(file)
@@ -32,54 +37,55 @@ class Bills(db.Model):
 @app.route('/create_order', methods=['POST'])
 @async_timeout(5)
 async def create_order():
-    try:
-        current_seller = "Stock"
-        data = request.json
+    async with semaphore:
+        try:
+            current_seller = "Stock"
+            data = request.json
 
-        if "seller" in data:
-            current_seller = data["seller"]
+            if "seller" in data:
+                current_seller = data["seller"]
 
-        with open('stock.json', 'r') as file:
-            stock = json.load(file)
+            with open('stock.json', 'r') as file:
+                stock = json.load(file)
 
-        if data["item"] in stock and isinstance(data["quantity"], int):
-            new_bill = Bills(
-                item=data['item'],
-                seller=current_seller,
-                quantity=data['quantity'],
-                address=data['address'],
-                card_number=data['card_number'],
-                price=stock[data['item']]["seller-"+current_seller]["price"],
-                usd=stock[data['item']]["seller-"+current_seller]["price"]*data['quantity']
-            )
+            if data["item"] in stock and isinstance(data["quantity"], int):
+                new_bill = Bills(
+                    item=data['item'],
+                    seller=current_seller,
+                    quantity=data['quantity'],
+                    address=data['address'],
+                    card_number=data['card_number'],
+                    price=stock[data['item']]["seller-"+current_seller]["price"],
+                    usd=stock[data['item']]["seller-"+current_seller]["price"]*data['quantity']
+                )
 
-            db.session.add(new_bill)
-            db.session.commit()
+                db.session.add(new_bill)
+                db.session.commit()
 
-            order_data = {"current_seller" : current_seller, "item": new_bill.item, "quantity" : new_bill.quantity}
-            response = requests.post(url+'/update_stock', json=order_data)
-            
-            if response.status_code == 200:
-                print("Data sent successfully!")
+                order_data = {"current_seller" : current_seller, "item": new_bill.item, "quantity" : new_bill.quantity}
+                response = requests.post(url+'/update_stock', json=order_data)
+                
+                if response.status_code == 200:
+                    print("Data sent successfully!")
+                else:
+                    return (f"Failed to send data. Status code: {response.status_code}. Response text: {response.text}")
+                
+                return jsonify({'status': 'Order has been sent!',
+                                "bill_id": new_bill.bill_id,                               
+                                "item": new_bill.item,                           
+                                "seller": new_bill.seller,                            
+                                "quantity": new_bill.quantity,                              
+                                "price": stock[new_bill.item]["seller-"+new_bill.seller]["price"],
+                                "usd" : stock[new_bill.item]["seller-"+new_bill.seller]["price"]*new_bill.quantity,
+                                "address": new_bill.address,      
+                                "card_number": new_bill.card_number,            
+                                "status": "sent"                           
+                                }), 201
             else:
-                return (f"Failed to send data. Status code: {response.status_code}. Response text: {response.text}")
-            
-            return jsonify({'status': 'Order has been sent!',
-                            "bill_id": new_bill.bill_id,                               
-                            "item": new_bill.item,                           
-                            "seller": new_bill.seller,                            
-                            "quantity": new_bill.quantity,                              
-                            "price": stock[new_bill.item]["seller-"+new_bill.seller]["price"],
-                            "usd" : stock[new_bill.item]["seller-"+new_bill.seller]["price"]*new_bill.quantity,
-                            "address": new_bill.address,      
-                            "card_number": new_bill.card_number,            
-                            "status": "sent"                           
-                            }), 201
-        else:
-            return 'Wrong input. No such item in the stock or quantity not an integer.'
-    
-    except Exception as e:
-        return jsonify({'message': str(e)}), 500
+                return 'Wrong input. No such item in the stock or quantity not an integer.'
+        
+        except Exception as e:
+            return jsonify({'message': str(e)}), 500
 
 
 # @app.route('/create_custom_order', methods=['POST'])
@@ -98,7 +104,8 @@ async def create_order():
 @app.route('/status', methods=['GET'])
 @async_timeout(5)
 async def status():
-    return jsonify({'status': 'Healthy'}), 200
+    async with semaphore:
+        return jsonify({'status': 'Healthy'}), 200
 
 
 if __name__ == '__main__':

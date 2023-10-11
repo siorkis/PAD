@@ -27,7 +27,7 @@ function cacheMiddleware(req, res, next) {
   const key = req.path + JSON.stringify(req.body);  // Construct a cache key
   const cachedResponse = cache.get(key);
 
-  if (cachedResponse) {
+  if (cachedResponse and ) {
       console.log('Serving from cache:', key);  // Log cache hit
       const cacheStats = cache.getStats();
       console.log('Cache Statistics:', cacheStats);
@@ -108,7 +108,7 @@ app.get('/status', (req, res) => {
 });
 
 // on Windows:
-// first run zkServer.sh start from cmd ../zookeeper/bin/
+// first run from cmd ../zookeeper/bin/ - zkServer.sh start
 // netstat -an | grep 2181 - run from bash ../zookeeper/bin/
 // expected output (zk started):
 // TCP    0.0.0.0:2181           0.0.0.0:0              LISTENING
