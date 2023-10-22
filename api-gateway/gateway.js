@@ -8,8 +8,7 @@ const app = express();
 const PORT = 4000;
 
 // Microservices URLs
-const STOCK_SERVICE_URL = 'http://localhost:5000';
-const ORDERING_SERVICE_URL = 'http://localhost:5001';
+
 const cache = new NodeCache({ stdTTL: 60 });  // TTL in seconds, here set to 1 minute
 
 function acceptOnlyJSON(req, res, next) {
@@ -24,10 +23,15 @@ function acceptOnlyJSON(req, res, next) {
 
 // Middleware for caching
 function cacheMiddleware(req, res, next) {
-  const key = req.path + JSON.stringify(req.body);  // Construct a cache key
+  // Check if request method is GET
+  if (req.method !== 'GET') {
+    return next();
+  }
+
+  const key = req.path;  // Construct a cache key based only on path since GET requests don't have a body
   const cachedResponse = cache.get(key);
 
-  if (cachedResponse and ) {
+  if (cachedResponse) {
       console.log('Serving from cache:', key);  // Log cache hit
       const cacheStats = cache.getStats();
       console.log('Cache Statistics:', cacheStats);
@@ -42,7 +46,8 @@ function cacheMiddleware(req, res, next) {
   next();
 }
 
-app.use(express.json());  // for parsing application/json
+
+app.use(express.json()); 
 
 // Routes for stock_service
 app.use('/stock', acceptOnlyJSON, cacheMiddleware, (req, res) => {
@@ -62,8 +67,11 @@ app.use('/stock', acceptOnlyJSON, cacheMiddleware, (req, res) => {
                 data: req.body
             });
 
-            const key = req.path + JSON.stringify(req.body);
-            cache.set(key, response.data);
+            // Cache the response if it's a GET request
+            if (req.method === 'GET') {
+                const key = req.path;
+                cache.set(key, response.data);
+            }
 
             res.status(response.status).send(response.data);
         } catch (error) {
@@ -89,8 +97,11 @@ app.use('/order', acceptOnlyJSON, cacheMiddleware, (req, res) => {
                 data: req.body
             });
 
-            const key = req.path + JSON.stringify(req.body);
-            cache.set(key, response.data);
+            // Cache the response if it's a GET request
+            if (req.method === 'GET') {
+                const key = req.path;
+                cache.set(key, response.data);
+            }
 
             res.status(response.status).send(response.data);
         } catch (error) {
@@ -108,9 +119,9 @@ app.get('/status', (req, res) => {
 });
 
 // on Windows:
-// first run from cmd ../zookeeper/bin/ - zkServer.sh start
-// netstat -an | grep 2181 - run from bash ../zookeeper/bin/
+// first run from cmd ../zookeeper/bin/                                 | zkServer.sh start
+// run from bash                                                        | netstat -an | grep 2181
 // expected output (zk started):
 // TCP    0.0.0.0:2181           0.0.0.0:0              LISTENING
 // TCP    [::]:2181              [::]:0                 LISTENING
-// in order to terminate zk - zkServer.sh stop from cmd ../zookeeper/bin/
+// in order to terminate zk from cmd ../zookeeper/bin/                  | zkServer.sh stop

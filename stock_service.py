@@ -4,6 +4,9 @@ from flask import Flask, request, jsonify
 from timeout_helper import async_timeout, AsyncTimeoutException
 import json 
 import asyncio
+from werkzeug.serving import run_simple
+import socket
+import subprocess
 
 app = Flask(__name__)
 SERVICE1_URL = 'http://localhost:5001'
@@ -98,5 +101,14 @@ async def status():
         return jsonify({'status': 'Healthy'}), 200
 
 
+def find_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
+
 if __name__ == '__main__':
-    app.run(port=5000)
+    port = find_free_port()
+    print(f"Running on port {port}")
+    subprocess.run(["curl", "-X", "POST", "http://localhost:4001/register", "-H", "Content-Type: application/json", "--data", f'{{"serviceName": "stock_service", "servicePort": {port}}}'])
+    app.run(port=port, threaded=True)
+    

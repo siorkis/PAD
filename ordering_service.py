@@ -5,9 +5,12 @@ from timeout_helper import async_timeout, AsyncTimeoutException
 import json
 from flask_sqlalchemy import SQLAlchemy
 import asyncio
+from werkzeug.serving import run_simple
+import socket
+import subprocess
 
 app = Flask(__name__)
-url = 'http://localhost:5000'
+url = 'http://localhost:'
 
 concurrent_task_limit = 5
 semaphore = asyncio.Semaphore(concurrent_task_limit)
@@ -63,8 +66,11 @@ async def create_order():
                 db.session.commit()
 
                 order_data = {"current_seller" : current_seller, "item": new_bill.item, "quantity" : new_bill.quantity}
-                response = requests.post(url+'/update_stock', json=order_data)
-                
+            
+                data = requests.get('http://localhost:4001/services/stock_service')
+                get_url = data.json()
+                response = requests.post(url+str(get_url['ServicePort'])+'/update_stock', json=order_data)
+
                 if response.status_code == 200:
                     print("Data sent successfully!")
                 else:
@@ -87,20 +93,6 @@ async def create_order():
         except Exception as e:
             return jsonify({'message': str(e)}), 500
 
-
-# @app.route('/create_custom_order', methods=['POST'])
-# @async_timeout(5)
-# async def create_c_order():
-#     try:
-#         response = requests.get(f'{SERVICE1_URL}/get')
-#         numbers = response.json().get('numbers', [])
-#         total = sum(numbers)
-#         return jsonify({'sum': total}), 200
-#     except:
-#         return jsonify({'status': 'failure', 'message': 'Could not fetch data from Service 1'}), 500
-
-
-
 @app.route('/status', methods=['GET'])
 @async_timeout(5)
 async def status():
@@ -108,5 +100,14 @@ async def status():
         return jsonify({'status': 'Healthy'}), 200
 
 
+def find_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
+
 if __name__ == '__main__':
-    app.run(port=5001)
+    port = find_free_port()
+    print(f"Running on port {port}")
+    subprocess.run(["curl", "-X", "POST", "http://localhost:4001/register", "-H", "Content-Type: application/json", "--data", f'{{"serviceName": "ordering_service", "servicePort": {port}}}'])
+    app.run(port=port, threaded=True)
+    
