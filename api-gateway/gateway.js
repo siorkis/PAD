@@ -1,3 +1,4 @@
+// gateway.js
 const express = require('express');
 const axios = require('axios');
 const NodeCache = require('node-cache');
@@ -48,6 +49,7 @@ function cacheMiddleware(req, res, next) {
 
 
 app.use(express.json()); 
+const roundRobinCounters = {};
 
 // Routes for stock_service
 app.use('/stock', acceptOnlyJSON, cacheMiddleware, (req, res) => {

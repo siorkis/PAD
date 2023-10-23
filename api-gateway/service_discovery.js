@@ -1,3 +1,4 @@
+// service_discovery
 const zookeeper = require('node-zookeeper-client');
 const express = require('express');
 
@@ -7,42 +8,28 @@ const port = 4001;
 
 const client = zookeeper.createClient('localhost:2181');
 client.connect();
+const services = {};
 
 function registerService(serviceName, servicePort) {
   const baseServicePath = '/services';
   const servicePath = `${baseServicePath}/${serviceName}`;
+  const instancePath = `${servicePath}/instance-${servicePort}`;
   const serviceData = JSON.stringify({ address: '127.0.0.1', port: servicePort });
 
-  client.mkdirp(baseServicePath, (err) => {
+  client.mkdirp(servicePath, (err) => {
     if (err && err.getCode() !== zookeeper.Exception.NODE_EXISTS) {
       throw err;
     }
 
-    client.exists(servicePath, (err, stat) => {
-      if (err) throw new Error(err);
-
-      if (stat) {
-        console.log(`${serviceName} already registered. Updating data...`);
-        client.setData(
-          servicePath,
-          Buffer.from(serviceData),
-          (err) => {
-            if (err) throw new Error(err);
-            console.log(`Updated ${serviceName} with data: ${serviceData}`);
-          }
-        );
-      } else {
-        client.create(
-          servicePath,
-          Buffer.from(serviceData),
-          zookeeper.CreateMode.EPHEMERAL,
-          (err) => {
-            if (err) throw new Error(err);
-            console.log(`Registered ${serviceName} with data: ${serviceData}`);
-          }
-        );
+    client.create(
+      instancePath,
+      Buffer.from(serviceData),
+      zookeeper.CreateMode.EPHEMERAL,
+      (err) => {
+        if (err) throw new Error(err);
+        console.log(`Registered ${serviceName} instance at ${instancePath} with data: ${serviceData}`);
       }
-    });
+    );
   });
 }
 
@@ -74,14 +61,46 @@ process.on('SIGINT', () => {
 function discoverService(serviceName, callback) {
   console.log("entered discoverService")
   const servicePath = `/services/${serviceName}`;
-  client.getData(servicePath, (err, serviceData) => {
-      if (err) {
-          callback(err);
-          return;
-      }
-      const service = JSON.parse(serviceData.toString());
-      callback(null, { ServiceAddress: service.address, ServicePort: service.port });
-  });
+  // client.getData(servicePath, (err, serviceData) => {
+  //     if (err) {
+  //         callback(err);
+  //         return;
+  //     }
+  //     const service = JSON.parse(serviceData.toString());
+  //     callback(null, { ServiceAddress: service.address, ServicePort: service.port });
+  // });
+  client.getChildren(servicePath, (err, children, stats) => {
+    if (err) {
+        callback(err);
+        return;
+    }
+
+    // If no services are available, return an error
+    if (children.length === 0) {
+        callback(new Error('No services available for ' + serviceName));
+        return;
+    }
+
+    // If the service hasn't been called before, start from the first service
+    if (!services[serviceName]) {
+        services[serviceName] = 0;
+    }
+
+    // Get the service at the current index
+    const serviceIndex = services[serviceName] % children.length;
+    const childPath = `${servicePath}/${children[serviceIndex]}`;
+    client.getData(childPath, (err, serviceData) => {
+        if (err) {
+            callback(err);
+            return;
+        }
+        const service = JSON.parse(serviceData.toString());
+        callback(null, { ServiceAddress: service.address, ServicePort: service.port });
+
+        // Increment the index for the next call
+        services[serviceName] = serviceIndex + 1;
+    });
+});
 }
 
 app.get('/services/:name', (req, res) => {
