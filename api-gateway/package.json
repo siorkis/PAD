@@ -2,16 +2,15 @@
   "name": "api-gateway",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "gateway.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Covtun Serghei",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.5.1",
-    "consul": "^1.2.0",
     "express": "^4.18.2",
     "node-cache": "^5.1.2",
     "node-zookeeper-client": "^1.1.3"
