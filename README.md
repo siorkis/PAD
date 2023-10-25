@@ -2,6 +2,76 @@
 
 **Online grocery platform (ex: Amazon)**
 
+If you want to run this project, firstly:
+
+You need to have installed Zookeeper.
+
+on Windows:
+
+first run from cmd ../zookeeper bin/ 
+> zkServer.sh start
+
+run from bash 
+> netstat -an | grep 2181
+
+expected output (zk started):
+> TCP    0.0.0.0:2181           0.0.0.0:0              LISTENING
+
+> TCP    [::]:2181              [::]:0                 LISTENING
+
+In order to terminate zk from cmd ../zookeeper/bin/  > zkServer.sh stop   
+
+
+In order to run the **images** run the following commands:
+
+1. 
+```
+docker network create my_network
+```
+
+2. 
+```
+docker run --name gateway --network my_network -p 4000:4000 -e SERVICE_DISCOVERY_URL=http://service_discovery:4001 sergheicovtun/pad_lab_1:gateway
+```
+3. 
+```
+docker run --name stock_service --network my_network -p 5000:5000 sergheicovtun/pad_lab_1:stock
+```
+4. 
+```
+docker run --name ordering_service --network my_network -p 5001:5001 sergheicovtun/pad_lab_1:ordering
+```
+
+Take into consideration that by running gateway.js, you running service_discovery as well, so you don't need to run service_discovery.js separately.
+
+**DB note:**
+
+In order to work with DB you should have PostgreSQL database which u cane create with following command:
+```
+CREATE TABLE bills (
+    bill_id SERIAL PRIMARY KEY,
+    item VARCHAR(255),
+    seller VARCHAR(255),
+    quantity INTEGER,
+    address VARCHAR(255),
+    card_number VARCHAR(255),
+    price REAL,
+    usd REAL
+);
+```
+
+Also make sure you have the "db_config.json" file with following info:
+```
+{
+  "db_name": your_db_name,
+  "user": your_username,
+  "password": your_password,
+  "host": your_host, // default value could be "localhost"
+  "port": your_port, // default value could be "5432"
+}
+```
+
+
 ## Assess Application Suitability
 
 #### Scalability
@@ -26,10 +96,8 @@ Online grocery stores often face changing customer preferences and market trends
 Microservices make it easier to integrate with third-party services and APIs, such as payment gateways or mapping services, which is crucial for a seamless user experience.
 
 ## Define Service Boundaries
-![image](https://github.com/siorkis/PAD/assets/10360165/88135c1f-c8b2-4ceb-a924-1d33d0a58f64)
-
+![Alt text](pad_diagram.png)
 #### Ordering Service
-- Calculating the shipping price
 - Building the bill 
 - Sending a bill to the user
 - Make default order
@@ -55,8 +123,8 @@ Microservices make it easier to integrate with third-party services and APIs, su
 
 ### Ordering Service
 
-**/create_fast_order**
-> JSON 
+**/create_order POST**
+> url: http://localhost:4000/order/create_order JSON 
 ```
 request: { 
            "item": "apple",
@@ -69,26 +137,26 @@ request: {
 > JSON
 
 ```
-payload: { 
+payload: { 'status': 'Order has been sent!',
            "bill_id": 1,
            "item": "apple",
            "seller": Stock
            "quantity": 5,
-           "user_id": 123,
+           "price": 2,
+           "usd": 10.0,
            "address": "Florida, Ancr Str, bd 14",
            "card_number": 1234123412341234,
            "status": "sent"
           }
 ```
 
-**/create_custom_order**
-> JSON 
+> url: http://localhost:4000/order/create_order JSON 
 ```
 request: { 
            "item": "apple",
+           "seller": John
            "quantity": 2,
            "address": "Florida, Ancr Str, bd 14",
-           "seller": Alex
            "card_number": 1234123412341234
           }
 ```
@@ -96,65 +164,80 @@ request: {
 > JSON
 
 ```
-payload: { 
+payload: { 'status': 'Order has been sent!',
            "bill_id": 1,
            "item": "apple",
-           "seller": Alex
+           "seller": John
            "quantity": 5,
-           "user_id": 123,
+           "price": 4.5,
+           "usd": 22.5,
            "address": "Florida, Ancr Str, bd 14",
            "card_number": 1234123412341234,
            "status": "sent"
           }
+```
+
+**/status GET**
+> url: http://localhost:4000/order/status
+> empty request
+
+> Response:
+```
+{'status': 'Healthy'}
 ```
 
 
 ### Stock Service
 
 **/show_stock GET**
-> JSON 
-```
-request: {"show_stock" : True}
-```
+> url: http://localhost:4000/stock/show_stock
+> empty request
+
 > Response
 > JSON
 
 ```
-payload: { 
-           "apple": {
-           "seller-Stock": {
-           "quantity": 1000,
-           "price": 2,
-           "seller": Stock
-           }
-          },
-          "banana": {
-           "seller-Stock": {
-           "quantity": 1000,
-           "price": 4,
-           "seller": Stock
-           }
-          },
-          "potato": {
-           "seller-Stock": {
-           "quantity": 1000,
-           "price": 3.5,
-           "seller": Stock
-           }
-          },
-          "tomato": {
-           "seller-Stock": {
-           "quantity": 1000,
-           "price": 2.8,
-           "seller": Stock
-           }
-          }
-         }
+{
+    "apple": {
+        "seller-Stock": {
+            "quantity": 972,
+            "price": 2,
+            "seller": "Stock"
+        },
+        "seller-John": {
+            "quantity": 2,
+            "price": 4.5,
+            "seller": "John"
+        }
+    },
+    "banana": {
+        "seller-Stock": {
+            "quantity": 1000,
+            "price": 4,
+            "seller": "Stock"
+        }
+    },
+    "potato": {
+        "seller-Stock": {
+            "quantity": 1000,
+            "price": 3.5,
+            "seller": "Stock"
+        }
+    },
+    "tomato": {
+        "seller-Stock": {
+            "quantity": 1000,
+            "price": 2.8,
+            "seller": "Stock"
+        }
+    }
+}
 ```
 
 
 **/search GET**
-> JSON 
+> url: http://localhost:4000/stock/search
+> request JSON 
 ```
 request: {"find_all" : "apple"}
 ```
@@ -162,16 +245,23 @@ request: {"find_all" : "apple"}
 > JSON
 
 ```
-payload: { 
-           "quantity": 1000,
-           "price": 2,
-         }
+"seller-Stock": {
+  "quantity": 972,
+  "price": 2,
+  "seller": "Stock"
+  },
+"seller-John": {
+  "quantity": 2,
+   "price": 4.5,
+  "seller": "John"
+}
 ```
 
-**/add_item GET**
+**/add_item POST**
+> url: http://localhost:4000/stock/add_item
 > JSON 
 ```
-request: {"pineapple": {
+request: {"apple": {
            "seller-Alex": {
            "quantity": 5,
            "price": 4.50,
@@ -184,6 +274,62 @@ request: {"pineapple": {
 
 ```
 payload: { "success": True}
+```
+
+**/update_stock POST, internal endpoint** 
+> url: http://localhost:4000/stock/update_stock
+> JSON 
+```
+{
+  "current_seller" : "Stock", 
+  "item": "apple", 
+  "quantity" : 5
+}
+```
+> Response
+> JSON
+
+```
+payload: "Data sent successfully!"
+```
+
+**/status GET**
+> url: http://localhost:4000/stock/status
+> empty request
+
+> Response:
+```
+{'status': 'Healthy'}
+```
+
+### Gateway
+Use:
+```
+http://localhost:4000/stock/...
+
+http://localhost:4000/order/...
+```
+
+In order to communicate with microservices.
+
+**/status GET**
+> url: http://localhost:4000/status
+> empty request
+
+> Response:
+```
+{'status': 'Healthy'}
+```
+
+## Service_discovery
+
+**/status GET**
+> url: http://localhost:4001/status
+> empty request
+
+> Response:
+```
+{'status': 'Healthy'}
 ```
 
 
