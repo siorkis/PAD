@@ -265,6 +265,7 @@ request: {"apple": {
            "seller-Alex": {
            "quantity": 5,
            "price": 4.50,
+           "seller": "Alex"
             }
            }
           }

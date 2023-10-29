@@ -1,14 +1,19 @@
 {
     "apple": {
         "seller-Stock": {
-            "quantity": 972,
+            "quantity": 963,
             "price": 2,
             "seller": "Stock"
         },
         "seller-John": {
-            "quantity": 2,
+            "quantity": 500,
             "price": 4.5,
             "seller": "John"
+        },
+        "seller-Alex": {
+            "quantity": 5,
+            "price": 4.5,
+            "seller": "Alex"
         }
     },
     "banana": {

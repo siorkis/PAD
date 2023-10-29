@@ -8,49 +8,49 @@ const { discoverService } = require('./service_discovery');
 const app = express();
 const PORT = 4000;
 
-class CircuitBreaker {
-    constructor(options) {
-      this.failureThreshold = options.failureThreshold || 3;
-      this.resetTimeout = options.resetTimeout || 10000; // 10 seconds
-      this.failureCount = 0;
-      this.lastFailureTime = null;
-      this.state = 'CLOSED';
-    }
+// class CircuitBreaker {
+//     constructor(options) {
+//       this.failureThreshold = options.failureThreshold || 3;
+//       this.resetTimeout = options.resetTimeout || 10000; // 10 seconds
+//       this.failureCount = 0;
+//       this.lastFailureTime = null;
+//       this.state = 'CLOSED';
+//     }
   
-    async call(fn, ...args) {
-      if (this.state === 'OPEN') {
-        if (Date.now() - this.lastFailureTime > this.resetTimeout) {
-          this.state = 'HALF-OPEN';
-        } else {
-          throw new Error('Circuit Breaker is open');
-        }
-      }
+//     async call(fn, ...args) {
+//       if (this.state === 'OPEN') {
+//         if (Date.now() - this.lastFailureTime > this.resetTimeout) {
+//           this.state = 'HALF-OPEN';
+//         } else {
+//           throw new Error('Circuit Breaker is open');
+//         }
+//       }
   
-      try {
-        const result = await fn(...args);
-        if (this.state === 'HALF-OPEN') {
-          this.state = 'CLOSED';
-          this.failureCount = 0;
-        }
-        return result;
-      } catch (error) {
-        this.failureCount += 1;
-        this.lastFailureTime = Date.now();
+//       try {
+//         const result = await fn(...args);
+//         if (this.state === 'HALF-OPEN') {
+//           this.state = 'CLOSED';
+//           this.failureCount = 0;
+//         }
+//         return result;
+//       } catch (error) {
+//         this.failureCount += 1;
+//         this.lastFailureTime = Date.now();
   
-        if (this.failureCount >= this.failureThreshold) {
-          this.state = 'OPEN';
-          console.log('Circuit Breaker tripped');
-        }
+//         if (this.failureCount >= this.failureThreshold) {
+//           this.state = 'OPEN';
+//           console.log('Circuit Breaker tripped');
+//         }
   
-        throw error;
-      }
-    }
-  }
+//         throw error;
+//       }
+//     }
+//   }
 
-const circuitBreaker = new CircuitBreaker({
-    failureThreshold: 3,
-    resetTimeout: 3500, // 3.5 * 1000
-});
+// const circuitBreaker = new CircuitBreaker({
+//     failureThreshold: 3,
+//     resetTimeout: 3500, // 3.5 * 1000
+// });
 
 const cache = new NodeCache({ stdTTL: 60 });  // TTL in seconds, here set to 1 minute
 
@@ -103,7 +103,7 @@ app.use('/stock', acceptOnlyJSON, cacheMiddleware, (req, res) => {
         }
 
         try {
-            const service_call = await circuitBreaker.call(discoverService, 'stock_service');
+            // const service_call = await circuitBreaker.call(discoverService, 'stock_service');
             const serviceURL = `http://${service.ServiceAddress}:${service.ServicePort}${req.path}`;
             console.log("Forwarding to:", serviceURL);
             const response = await axios({
@@ -135,7 +135,7 @@ app.use('/order', acceptOnlyJSON, cacheMiddleware, (req, res) => {
         }
 
         try {
-            const service_call = await circuitBreaker.call(discoverService, 'ordering_service');
+            // const service_call = await circuitBreaker.call(service, 'ordering_service');
             const serviceURL = `http://${service.ServiceAddress}:${service.ServicePort}${req.path}`;
             const response = await axios({
                 method: req.method,

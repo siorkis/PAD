@@ -61,14 +61,7 @@ process.on('SIGINT', () => {
 function discoverService(serviceName, callback) {
   console.log("entered discoverService")
   const servicePath = `/services/${serviceName}`;
-  // client.getData(servicePath, (err, serviceData) => {
-  //     if (err) {
-  //         callback(err);
-  //         return;
-  //     }
-  //     const service = JSON.parse(serviceData.toString());
-  //     callback(null, { ServiceAddress: service.address, ServicePort: service.port });
-  // });
+
   client.getChildren(servicePath, (err, children, stats) => {
     if (err) {
         callback(err);

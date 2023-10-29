@@ -7,6 +7,7 @@ import asyncio
 from werkzeug.serving import run_simple
 import socket
 import subprocess
+import time
 
 app = Flask(__name__)
 SERVICE1_URL = 'http://localhost:5001'
@@ -19,6 +20,8 @@ semaphore = asyncio.Semaphore(concurrent_task_limit)
 @app.route('/show_stock', methods=['GET', 'POST'])
 @async_timeout(5)
 async def show_stock():
+    print("Starting...")
+    time.sleep(6)  
     async with semaphore:
         try:
             with open('stock.json', 'r') as file:
