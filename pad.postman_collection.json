@@ -1,0 +1,134 @@
+{
+	"info": {
+		"_postman_id": "a020479a-1295-4944-bc36-d9a53876297c",
+		"name": "pad",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "24461077"
+	},
+	"item": [
+		{
+			"name": "order/status",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.sendRequest(\"https://postman-echo.com/get\", function (err, response) {\r",
+							"    console.log(response.json());\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept-encoding": true,
+					"connection": true
+				},
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VyTmFtZSI6IlRvZGlyYXNjdUlsaWUiLCJFbWFpbCI6InRvZGlyYXNjdWlsaWVAZ21haWwuY29tIiwibmJmIjoxNjg2ODI0NDgzLCJleHAiOjE2ODY5MTA4ODMsImlhdCI6MTY4NjgyNDQ4M30.gAYDJdbHPUnixLBE6L5oQkSVMOwl0Y_Q8CJsSwUGKKE",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"item\": \"apple\",\r\n    \"quantity\": 5, \r\n    \"address\": \"Florida, Ancr Str, bd 14\",\r\n    \"card_number\": 1234123412341234\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:4000/stock/show_stock"
+			},
+			"response": []
+		},
+		{
+			"name": "order/create_order",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"item\": \"apple\",\r\n    \"quantity\": 1, \r\n    \"address\": \"Florida, Ancr Str, bd 14\",\r\n    \"card_number\": 1234123412341234\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:4000/order/create_order"
+			},
+			"response": []
+		},
+		{
+			"name": "create_order",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "show_stock",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "search",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "add_item",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "stock/status",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "gateway/status",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "service_discovery/status",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	]
+}
