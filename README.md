@@ -96,7 +96,7 @@ Online grocery stores often face changing customer preferences and market trends
 Microservices make it easier to integrate with third-party services and APIs, such as payment gateways or mapping services, which is crucial for a seamless user experience.
 
 ## Define Service Boundaries
-![Alt text](pad_diagram.png)
+![Alt text](pad_diagram-1.png)
 #### Ordering Service
 - Building the bill 
 - Sending a bill to the user
