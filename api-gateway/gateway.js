@@ -3,54 +3,43 @@ const express = require('express');
 const axios = require('axios');
 const NodeCache = require('node-cache');
 
+
+class CircuitBreaker {
+    constructor(failureThreshold, resetTimeout) {
+        this.failureThreshold = failureThreshold;
+        this.resetTimeout = resetTimeout;
+        this.failures = 0;
+        this.lastFailureTime = null;
+        this.state = 'CLOSED';
+    }
+
+    recordFailure() {
+        this.failures++;
+        this.lastFailureTime = Date.now();
+        if (this.failures >= this.failureThreshold) {
+            this.state = 'OPEN';
+            console.log('Circuit Breaker tripped!');
+        }
+    }
+
+    canRequest() {
+        if (this.state === 'OPEN') {
+            const now = Date.now();
+            if (now - this.lastFailureTime > this.resetTimeout) {
+                this.state = 'HALF-OPEN';
+                this.failures = 0;
+                return true;
+            }
+            return false;
+        }
+        return true;
+    }
+}
+
 const { discoverService } = require('./service_discovery');
 
 const app = express();
 const PORT = 4000;
-
-// class CircuitBreaker {
-//     constructor(options) {
-//       this.failureThreshold = options.failureThreshold || 3;
-//       this.resetTimeout = options.resetTimeout || 10000; // 10 seconds
-//       this.failureCount = 0;
-//       this.lastFailureTime = null;
-//       this.state = 'CLOSED';
-//     }
-  
-//     async call(fn, ...args) {
-//       if (this.state === 'OPEN') {
-//         if (Date.now() - this.lastFailureTime > this.resetTimeout) {
-//           this.state = 'HALF-OPEN';
-//         } else {
-//           throw new Error('Circuit Breaker is open');
-//         }
-//       }
-  
-//       try {
-//         const result = await fn(...args);
-//         if (this.state === 'HALF-OPEN') {
-//           this.state = 'CLOSED';
-//           this.failureCount = 0;
-//         }
-//         return result;
-//       } catch (error) {
-//         this.failureCount += 1;
-//         this.lastFailureTime = Date.now();
-  
-//         if (this.failureCount >= this.failureThreshold) {
-//           this.state = 'OPEN';
-//           console.log('Circuit Breaker tripped');
-//         }
-  
-//         throw error;
-//       }
-//     }
-//   }
-
-// const circuitBreaker = new CircuitBreaker({
-//     failureThreshold: 3,
-//     resetTimeout: 3500, // 3.5 * 1000
-// });
 
 const cache = new NodeCache({ stdTTL: 60 });  // TTL in seconds, here set to 1 minute
 
@@ -92,18 +81,21 @@ function cacheMiddleware(req, res, next) {
 
 app.use(express.json()); 
 const roundRobinCounters = {};
-
+const circuitBreaker = new CircuitBreaker(3, 10000);
 // Routes for stock_service
 app.use('/stock', acceptOnlyJSON, cacheMiddleware, (req, res) => {
     console.log("Entered /stock route");
     discoverService('stock_service', async (err, service) => {
-        if (err) {
-            console.error(`Failed to discover stock_service: ${err.message}`);
-            return res.status(503).send('Service Unavailable');
+        // if (err) {
+        //     console.error(`Failed to discover stock_service: ${err.message}`);
+        //     return res.status(503).send('Service Unavailable');
+        // }
+
+        if (!circuitBreaker.canRequest()) {
+            return res.status(503).send('Service unavailable');
         }
 
         try {
-            // const service_call = await circuitBreaker.call(discoverService, 'stock_service');
             const serviceURL = `http://${service.ServiceAddress}:${service.ServicePort}${req.path}`;
             console.log("Forwarding to:", serviceURL);
             const response = await axios({
@@ -120,6 +112,7 @@ app.use('/stock', acceptOnlyJSON, cacheMiddleware, (req, res) => {
 
             res.status(response.status).send(response.data);
         } catch (error) {
+            circuitBreaker.recordFailure();
             res.status(error.response?.status || 500).send(error.response?.data || {});
         }
     });
@@ -129,13 +122,16 @@ app.use('/stock', acceptOnlyJSON, cacheMiddleware, (req, res) => {
 app.use('/order', acceptOnlyJSON, cacheMiddleware, (req, res) => {
     console.log("Entered /order route");
     discoverService('ordering_service', async (err, service) => {
-        if (err) {
-            console.error(`Failed to discover order_service: ${err.message}`);
-            return res.status(503).send('Service Unavailable');
+        // if (err) {
+        //     console.error(`Failed to discover stock_service: ${err.message}`);
+        //     return res.status(503).send('Service Unavailable');
+        // }
+
+        if (!circuitBreaker.canRequest()) {
+            return res.status(503).send('Service unavailable');
         }
 
         try {
-            // const service_call = await circuitBreaker.call(service, 'ordering_service');
             const serviceURL = `http://${service.ServiceAddress}:${service.ServicePort}${req.path}`;
             const response = await axios({
                 method: req.method,
@@ -151,6 +147,7 @@ app.use('/order', acceptOnlyJSON, cacheMiddleware, (req, res) => {
 
             res.status(response.status).send(response.data);
         } catch (error) {
+            circuitBreaker.recordFailure();
             res.status(error.response?.status || 500).send(error.response?.data || {});
         }
     });
