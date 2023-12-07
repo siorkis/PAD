@@ -37,6 +37,8 @@ class CircuitBreaker {
 }
 
 const { discoverService } = require('./service_discovery');
+const { unregisterServiceInstance } = require('./service_discovery');
+const { getAliveInstancePort } = require('./service_discovery');
 
 const app = express();
 const PORT = 4000;
@@ -113,7 +115,26 @@ app.use('/stock', acceptOnlyJSON, cacheMiddleware, (req, res) => {
             res.status(response.status).send(response.data);
         } catch (error) {
             circuitBreaker.recordFailure();
-            res.status(error.response?.status || 500).send(error.response?.data || {});
+            
+            // comment 
+            const redirectPort = await getAliveInstancePort('stock_service');
+            console.log("redirectPort ", redirectPort)
+            const serviceURL = `http://${service.ServiceAddress}:${redirectPort}${req.path}`;
+            console.log("Redirect to:", serviceURL);
+            const response = await axios({
+            method: req.method,
+            url: serviceURL,
+            data: req.body
+            });
+            res.status(response.status).send(response.data);
+
+            if (circuitBreaker.state == "OPEN") {
+                unregisterServiceInstance("stock_service", service.ServicePort)
+                circuitBreaker.state = 'HALF-OPEN'
+            }
+            // comment 
+
+           // res.status(error.response?.status || 500).send(error.response?.data || {});
         }
     });
 });
