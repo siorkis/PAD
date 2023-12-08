@@ -63,30 +63,53 @@ async def create_order():
                 )
 
                 db.session.add(new_bill)
-                db.session.commit()
+                ready = requests.post('http://localhost:4002/2pc', json={ "service_identifier": "ordering",
+                                                                          "status_ordering" : "ready"})
+                ready_data = ready.json()
+                print(ready_data)
+                if ready_data['action'] == "commit":
+                    bill = {
+                        "bill_id" : new_bill.bill_id,
+                        "item" :new_bill.item,
+                        "seller" :new_bill.seller,
+                        "quantity" :new_bill.quantity,
+                        "address" :new_bill.address,
+                        "card_number" :new_bill.card_number,
+                        "price" :new_bill.price,
+                        "usd" : new_bill.usd
+                    }
 
-                order_data = {"current_seller" : current_seller, "item": new_bill.item, "quantity" : new_bill.quantity}
-            
-                data = requests.get('http://localhost:4001/services/stock_service')
-                get_url = data.json()
-                response = requests.post(url+str(get_url['ServicePort'])+'/update_stock', json=order_data)
+                    # bill = requests.post('http://localhost:4002/saga', json=bill)
+                    db.session.commit()
 
-                if response.status_code == 200:
-                    print("Data sent successfully!")
-                else:
-                    return (f"Failed to send data. Status code: {response.status_code}. Response text: {response.text}")
+                    order_data = {"current_seller" : current_seller, "item": new_bill.item, "quantity" : new_bill.quantity}
                 
-                return jsonify({'status': 'Order has been sent!',
-                                "bill_id": new_bill.bill_id,                               
-                                "item": new_bill.item,                           
-                                "seller": new_bill.seller,                            
-                                "quantity": new_bill.quantity,                              
-                                "price": stock[new_bill.item]["seller-"+new_bill.seller]["price"],
-                                "usd" : stock[new_bill.item]["seller-"+new_bill.seller]["price"]*new_bill.quantity,
-                                "address": new_bill.address,      
-                                "card_number": new_bill.card_number,            
-                                "status": "sent"                           
-                                }), 201
+                    data = requests.get('http://localhost:4001/services/stock_service')
+                    get_url = data.json()
+                    response = requests.post(url+str(get_url['ServicePort'])+'/update_stock', json=order_data)
+
+                    if response.status_code == 200:
+                        print("Data sent successfully!")
+                    else:
+                        return (f"Failed to send data. Status code: {response.status_code}. Response text: {response.text}")
+                    
+                    return jsonify({'status': 'Order has been sent!',
+                                    "bill_id": new_bill.bill_id,                               
+                                    "item": new_bill.item,                           
+                                    "seller": new_bill.seller,                            
+                                    "quantity": new_bill.quantity,                              
+                                    "price": stock[new_bill.item]["seller-"+new_bill.seller]["price"],
+                                    "usd" : stock[new_bill.item]["seller-"+new_bill.seller]["price"]*new_bill.quantity,
+                                    "address": new_bill.address,      
+                                    "card_number": new_bill.card_number,            
+                                    "status": "sent"                           
+                                    }), 201
+                elif ready_data['action'] == "rollback":
+                    db.session.rollback()
+                    return "rollback"
+                else:
+                    db.session.rollback()
+                    return "rollback"
             else:
                 return 'Wrong input. No such item in the stock or quantity not an integer.'
         

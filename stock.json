@@ -6,12 +6,12 @@
             "seller": "Stock"
         },
         "seller-John": {
-            "quantity": 500,
+            "quantity": 466,
             "price": 4.5,
             "seller": "John"
         },
         "seller-Alex": {
-            "quantity": 5,
+            "quantity": 500,
             "price": 4.5,
             "seller": "Alex"
         }
